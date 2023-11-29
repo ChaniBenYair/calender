@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js'></script>
+</head>
+<style>
+    /* עיצוב הכפתורים */
+    .button {
+        background-color: var(--fc-button-bg-color);
+        color: white;
+        border: 1px solid transparent;
+        border-radius: 0.25em;
+        display: inline-block;
+        font-size: 1em;
+        font-weight: 400;
+        line-height: 1.5;
+        padding: 0.4em 0.65em;
+        text-align: center;
+        user-select: none;
+        vertical-align: middle;
+        cursor: pointer;
+    }
+
+    .button:hover {
+        background-color: #151e27;
+    }
+</style>
+
+<body>
+
+    <button class="button" onclick="addEvent()">Add Event +</button>
+    <button class="button" onclick="removeEvent()">Remove Event</button>
+    <button class="button" onclick="updateEvent()">Update Event</button>
+
+    <div id="emptyDiv"></div>
+    <div id='calendar'></div>
+</body>
+<script>
+
+    var emptyDiv; var inp1; var inp2; var submit; var dataUser = { description: "", date: "" }; let allevents;
+    //הצגת לוח שנה בעת טעינת הדף
+    document.addEventListener('DOMContentLoaded', function () {
+        var calendarEl = document.getElementById('calendar');
+        var calendar = new FullCalendar.Calendar(calendarEl, {
+            initialView: 'dayGridMonth'
+        });
+        calendar.render();
+    });
+
+    document.addEventListener('DOMContentLoaded', function () {
+        axios.get("https://eventsapi.onrender.com/api/Events").then
+            ((res) => {
+                var calendarEl = document.getElementById('calendar');
+                var calendar = new FullCalendar.Calendar(calendarEl,
+                    { initialView: 'dayGridMonth', events: res.data });
+                calendar.render();
+            });
+    });
+    //הוספת מאורע-יצירת אלמט הבנוי מטקסט ותאריך
+    function addEvent() {
+        emptyDiv = document.getElementById("emptyDiv");
+        inp1 = document.createElement("input");
+        inp1.type = "text";
+        inp2 = document.createElement("input");
+        inp2.type = "date";
+        emptyDiv.appendChild(inp1);
+        emptyDiv.appendChild(inp2);
+        submit = document.createElement("button");
+        submit.innerHTML = "✔️";
+        emptyDiv.appendChild(submit);
+        submit.addEventListener("click", add);
+    }
+    //הוספת המאורע הרצוי במיקום הרצוי
+    function add() {
+        //dataUser.description = inp1.value;
+        //dataUser.date = inp2.value;
+        axios.post("https://eventsapi.onrender.com/api/Events", {
+            "title": inp1.value,
+            "start": inp2.value
+        }).then(res => {
+            console.log(res.data);
+        })
+        inp1.remove(); inp2.remove(); submit.remove();
+        document.getElementById("emptyDiv").innerHTML += " "
+        //טעינת הדף
+        setTimeout(function () {
+            location.reload()
+        }, 1000)
+    }
+    //---------------------------------------------------------------
+    //מחיקת אירוע
+    function removeEvent() {
+        let id = 1;
+        axios.get(`https://eventsapi.onrender.com/api/Events`).then(res => {
+            //מציג את כל האירועים הקיימים וכפתור למחיקה
+            for (let index = 0; index < res.data.length; index++) {
+                var delItem = document.createElement("div")
+                delItem.className = "delItem"
+                document.body.appendChild(delItem)
+                var butemDel = document.createElement("button")
+                butemDel.id = res.data[index].id
+                butemDel.className = "butDel"
+                butemDel.innerHTML = "del"
+                delItem.appendChild(butemDel)
+                var eventDel = document.createElement("div")
+                eventDel.innerHTML = res.data[index].title
+                delItem.appendChild(eventDel)
+                butemDel.setAttribute("onclick", "funcDel()")
+            }
+        })
+    }
+    //מוחק מהלוח את האירוע הרצוי
+    function funcDel() {
+        axios.delete("https://eventsapi.onrender.com/api/Events/" + event.target.id,)
+            .then((res) => console.log(res.data))
+        setTimeout(function () {
+            location.reload()
+        }, 1000)
+    }
+    //עידכון אירוע
+    function updateEvent() {
+        let id = 1;
+        //מציג את כל האירועים הקיימים וכפתור לעידכון
+        axios.post(`https://eventsapi.onrender.com/api/Events`).then(res => {
+            console.log(res)
+            for (let index = 0; index < res.data.length; index++) {
+                var upItem = document.createElement("div")
+                upItem.className = "upItem"
+                document.body.appendChild(upItem)
+                var butemUp = document.createElement("button")
+                butemUp.id = res.data[index].id
+                butemUp.className = "butUp"
+                butemUp.innerHTML = "up"
+                upItem.appendChild(butemUp)
+                var eventUp = document.createElement("div")
+                eventUp.innerHTML = res.data[index].title
+                upItem.appendChild(eventUp)
+                butemUp.setAttribute("onclick", "UpFunc()")
+            }
+        })
+
+    }
+    //יוצר אלמנט לכתיבת השינוי
+    function UpFunc() {
+        titleUp = document.createElement("input")
+        titleUp.id = "title"
+        titleUp.type = "text"
+        document.body.appendChild(titleUp)
+        dateOfEvantUp = document.createElement("input")
+        dateOfEvantUp.id = "time"
+        dateOfEvantUp.type = "date"
+        document.body.appendChild(dateOfEvantUp)
+        var buttomss = document.createElement("button");
+        buttomss.innerHTML = "up"
+        document.body.appendChild(buttomss)
+        buttomss.setAttribute("onclick", "updateItem()")
+
+    }
+    //מעדכן את השינוי בלוח
+    function updateItem() {
+        axios.post("https://eventsapi.onrender.com/api/Events/" + event.target.id, {
+            "title": titleUp.value,
+            "start": dateOfEvantUp.value
+        })
+            .then(res => x = res)
+        setTimeout(function () {
+            location.reload()
+        }, 1000)
+    }
+
+</script>
+
+</html>
